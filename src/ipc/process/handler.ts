@@ -221,6 +221,9 @@ export async function closeAntigravity(): Promise<void> {
       '/usr/share/antigravity/',
       '/usr/local/bin/antigravity',
       '/usr/bin/antigravity',
+      // macOS .app bundle paths (capitalized and lowercase variants)
+      '/Applications/Antigravity.app/Contents/MacOS/Antigravity',
+      '/Applications/antigravity.app/Contents/MacOS/antigravity',
     ];
 
     // Helper to list processes
@@ -358,9 +361,17 @@ export async function closeAntigravity(): Promise<void> {
       if (platform === 'win32') {
         execSync('taskkill /F /IM "Antigravity.exe" /T', { stdio: 'ignore' });
       } else {
-        // Use -x to match the exact executable name 'antigravity', not substrings.
-        // This avoids killing processes like AntigravityManager or helpers.
-        execSync('pkill -9 -x antigravity', { stdio: 'ignore' });
+        // Use -x to match the exact executable name, not substrings.
+        // Run both casings because macOS installs as 'Antigravity' (capital A)
+        // while Linux installs use 'antigravity' (lowercase).
+        // Errors are swallowed intentionally — process may already be gone or
+        // the variant may not exist on this platform.
+        try {
+          execSync('pkill -9 -x antigravity', { stdio: 'ignore' });
+        } catch {
+          // Ignore — may not match on this system
+        }
+        execSync('pkill -9 -x Antigravity', { stdio: 'ignore' });
       }
     } catch {
       // Ignore — process may already be gone
